@@ -20,12 +20,33 @@ namespace workshop.wwwapi.Data
             modelBuilder.Entity<Appointment>()
                 .HasKey(a => new { a.DoctorId, a.PatientId });
 
+            modelBuilder.Entity<Appointment>()
+                .HasOne(a => a.Doctor)
+                .WithMany(d => d.Appointments)
+                .HasForeignKey(a => a.DoctorId);
+
+            modelBuilder.Entity<Appointment>()
+                .HasOne(a => a.Patient)
+                .WithMany(p => p.Appointments)
+                .HasForeignKey(a => a.PatientId);
+
             //TODO: Seed Data Here
             modelBuilder.Entity<Patient>().HasData(
-                new Patient { Id = 1, FullName = "Martin Doe" },
-                new Patient { Id = 2, FullName = "Dave Smith" },
-                new Patient { Id = 3, FullName = "Nigel Johnson" }
+                new Patient { Id = 1, FullName = "Martin Marson" },
+                new Patient { Id = 2, FullName = "Bob Bobson" },
+                new Patient { Id = 3, FullName = "Alice Alisson" }
             );
+
+            modelBuilder.Entity<Doctor>().HasData(
+                new Doctor { Id = 1, FullName = "Mike Mikeson" },
+                new Doctor { Id = 2, FullName = "Robin Robinson" }
+            );
+
+            modelBuilder.Entity<Appointment>().HasData(
+                new Appointment { Booking = new DateTime(2025, 1, 27, 10, 0, 0, DateTimeKind.Utc), DoctorId = 1, PatientId = 1 },
+                new Appointment { Booking = new DateTime(2025, 1, 31, 10, 0, 0, DateTimeKind.Utc), DoctorId = 2, PatientId = 3 }
+            );
+
 
 
         }

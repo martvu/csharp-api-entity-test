@@ -18,7 +18,16 @@ namespace workshop.wwwapi.Repository
 
         public async Task<IEnumerable<T>> Get()
         {
-            return _table.ToList();
+            return await _table.ToListAsync();
+        }
+
+        public async Task<IEnumerable<T>> GetWithNestedIncludes(Func<IQueryable<T>, IQueryable<T>> configureQuery)
+        {
+            IQueryable<T> query = _table;
+
+            query = configureQuery(query);
+
+            return await query.ToListAsync();
         }
 
         public async Task<T> Insert(T entity)
@@ -44,9 +53,9 @@ namespace workshop.wwwapi.Repository
             return entity;
         }
 
-        public async Task<T> GetById(int id)
+        public async Task<T> GetById(params object[] keyValues)
         {
-            return _table.Find(id);
+            return _table.Find(keyValues);
         }
         public async Task<IEnumerable<T>> GetWithIncludes(params Expression<Func<T, object>>[] includes)
         {
@@ -58,6 +67,26 @@ namespace workshop.wwwapi.Repository
             return await query.ToListAsync();
         }
 
+        public async Task<T> GetByIdWithIncludes(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _table;
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.FirstOrDefaultAsync(predicate);
+        }
+
+        public async Task<T> GetByIdWithNestedIncludes(
+        Expression<Func<T, bool>> predicate,
+        Func<IQueryable<T>, IQueryable<T>> configureQuery)
+        {
+            IQueryable<T> query = _table;
+
+            query = configureQuery(query);
+
+            return await query.FirstOrDefaultAsync(predicate);
+        }
         public async Task Save()
         {
             _db.SaveChangesAsync();
