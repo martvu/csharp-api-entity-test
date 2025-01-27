@@ -24,6 +24,9 @@ namespace workshop.wwwapi.Endpoints
             surgeryGroup.MapGet("/appointments", GetAppointments);
             surgeryGroup.MapGet("/appointments/{doctorId}/{patientId}", GetAppointmentById);
             surgeryGroup.MapPost("/appointments", CreateAppointment);
+
+            surgeryGroup.MapGet("/prescriptions", GetPrescriptions);
+            surgeryGroup.MapPost("/prescriptions", CreatePrescription);
         }
 
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -196,14 +199,15 @@ namespace workshop.wwwapi.Endpoints
             return TypedResults.Ok(result);
 
         }
-
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public static async Task<IResult> CreateAppointment(IRepository<Appointment> repository, AppointmentPost model)
         {
             var newAppointment = new Appointment()
             {
                 Booking = model.Booking,
                 DoctorId = model.DoctorId,
-                PatientId = model.PatientId
+                PatientId = model.PatientId,
+                Type = model.AppointmentType
             };
             var createdAppointment = await repository.Insert(newAppointment);
 
@@ -216,5 +220,78 @@ namespace workshop.wwwapi.Endpoints
 
             return TypedResults.Created($"/surgery/appointments/{createdAppointment.DoctorId}/{createdAppointment.PatientId}", result);
         }
+
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public static async Task<IResult> GetPrescriptions(IRepository<Prescription> repository)
+        {
+            var prescriptions = await repository.GetWithNestedIncludes(
+                query => query
+                    .Include(p => p.MedicinePrecriptions).ThenInclude(mp => mp.Medicine)
+                    .Include(p => p.Doctor)
+                    .Include(p => p.Patient)
+            );
+
+            var result = new List<PrescriptionDTO>();
+
+            foreach (var p in prescriptions)
+            {
+                var dto = new PrescriptionDTO()
+                {
+                    Medicines = p.Medicines.Select(m => new MedicineDTO()
+                    {
+                        Name = m.Name,
+                        Quantity = m.Quantity,
+                        Notes = m.Notes,
+                    }).ToList(),
+                    DoctorName = p.Doctor.FullName,
+                    PatientName = p.Patient.FullName
+                };
+                result.Add(dto);
+            }
+            return TypedResults.Ok(result);
+        }
+
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public static async Task<IResult> CreatePrescription(IRepository<Prescription> repository,IRepository<MedicinePrescription> msrepo, PrescriptionPost model)
+        {
+            var newPrescription = new Prescription()
+            {
+                MedicineIds = model.MedicineIds,
+                DoctorId = model.DoctorId,
+                PatientId = model.PatientId,
+            };
+
+            var created = await repository.Insert(newPrescription);
+            var medicinePrescription = model.MedicineIds.Select(medicineId => new MedicinePrescription
+            {
+                PrescriptionId = created.Id,
+                MedicineId = medicineId
+            }).ToList();
+
+            await msrepo.InsertRange(medicinePrescription);
+
+            var getCreated = await repository.GetByIdWithNestedIncludes(
+                p => p.Id == created.Id,
+                query => query
+                .Include(p => p.Medicines)
+                .Include(p => p.Doctor)
+                .Include(p => p.Patient)
+            );
+          
+            var dto = new PrescriptionDTO()
+            {
+                Medicines = getCreated.Medicines.Select(m => new MedicineDTO()
+                {
+                    Name = m.Name,
+                    Quantity = m.Quantity,
+                    Notes = m.Notes,
+                }).ToList(),
+                DoctorName = getCreated.Doctor.FullName,
+                PatientName = getCreated.Patient.FullName
+            };
+
+            return TypedResults.Created($"/surgery/patients/{getCreated.Id}", dto);
+        }
+
     }
 }

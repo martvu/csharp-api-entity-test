@@ -8,6 +8,7 @@ namespace workshop.wwwapi.Repository
         Task<IEnumerable<T>> Get();
         Task<IEnumerable<T>> GetWithNestedIncludes(Func<IQueryable<T>, IQueryable<T>> configureQuery);
         Task<T> Insert(T entity);
+        Task<IEnumerable<T>> InsertRange(IEnumerable<T> entities);
         Task<T> Update(T entity);
         Task<T> Delete(object id);
         Task Save();

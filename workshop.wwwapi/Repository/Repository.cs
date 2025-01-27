@@ -37,6 +37,12 @@ namespace workshop.wwwapi.Repository
             return entity;
         }
 
+        public async Task<IEnumerable<T>> InsertRange(IEnumerable<T> entities)
+        {
+            _table.AddRange(entities);
+            _db.SaveChanges();
+            return entities;
+        }
         public async Task<T> Update(T entity)
         {
             _table.Attach(entity);

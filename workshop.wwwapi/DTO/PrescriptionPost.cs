@@ -1,13 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
-using workshop.wwwapi.Models;
 
 namespace workshop.wwwapi.DTO
 {
-    public class AppointmentPost
+    public class PrescriptionPost
     {
-        public DateTime Booking { get; set; }
+        public List<int> MedicineIds { get; set; }
         public int DoctorId { get; set; }
         public int PatientId { get; set; }
-        public AppointmentType AppointmentType { get; set; }
     }
 }
