@@ -50,7 +50,11 @@ namespace workshop.wwwapi.Endpoints
         [ProducesResponseType(StatusCodes.Status200OK)]
         public static async Task<IResult> GetPatients(IRepository<Patient> repository)
         {
-            var patients = await repository.Get();
+            var patients = await repository.GetWithNestedIncludes(
+                query => query
+                    .Include(p => p.Appointments)
+                    .ThenInclude(a => a.Doctor)
+            );
             var patientDTOs = new List<PatientDTO>();
 
             foreach (var p in patients)
@@ -58,7 +62,13 @@ namespace workshop.wwwapi.Endpoints
                 var patientDTO = new PatientDTO()
                 {
                     Id = p.Id,
-                    FullName = p.FullName
+                    FullName = p.FullName,
+                    Appointments = p.Appointments.Select(a => new AppointmentDoctorDTO()
+                    {
+                        DoctorId = a.DoctorId,
+                        DoctorName = a.Doctor.FullName,
+                        Booking = a.Booking
+                    }).ToList()
                 };
                 patientDTOs.Add(patientDTO);
             }
@@ -111,15 +121,25 @@ namespace workshop.wwwapi.Endpoints
         [ProducesResponseType(StatusCodes.Status200OK)]
         public static async Task<IResult> GetDoctors(IRepository<Doctor> repository)
         {
-            var doctors = await repository.Get();
+            var doctors = await repository.GetWithNestedIncludes(
+                query => query
+                    .Include(d => d.Appointments)
+                    .ThenInclude(a => a.Patient)
+            );
             var doctorDTOs = new List<DoctorDTO>();
 
-            foreach (var p in doctors)
+            foreach (var d in doctors)
             {
                 var doctorDTO = new DoctorDTO()
                 {
-                    Id = p.Id,
-                    FullName = p.FullName
+                    Id = d.Id,
+                    FullName = d.FullName,
+                    Appointments = d.Appointments.Select(a => new AppointmentPatientDTO()
+                    {
+                        PatientId = a.PatientId,
+                        PatientName = a.Patient.FullName,
+                        Booking = a.Booking
+                    }).ToList()
                 };
                 doctorDTOs.Add(doctorDTO);
             }
